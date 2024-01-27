@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "header.hpp"
+#include "jpl/cstddef.hpp"
 
-TEST(default_test, tests_working)
+TEST(jpl, type_traits)
 {
-    EXPECT_EQ(test(3), 6);
+    
 };

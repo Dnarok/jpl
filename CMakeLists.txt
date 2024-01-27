@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-set(MY_PROJECT_NAME name)
+set(MY_PROJECT_NAME jpl)
 
 project(
     ${MY_PROJECT_NAME}
@@ -13,19 +13,13 @@ set(CMAKE_CXX_STANDARD 23)
 option(BUILD_TESTS "Build the tests" ON)
 add_subdirectory(external)
 
-add_library(${MY_PROJECT_NAME}
-    include/header.hpp
-    source/source.cpp
+add_library(${MY_PROJECT_NAME} INTERFACE
+    include/jpl/cstddef.hpp
+    include/jpl/type_traits.hpp
 )
 
 target_include_directories(${MY_PROJECT_NAME}
-    PUBLIC include
-)
-
-target_link_libraries(${MY_PROJECT_NAME}
-    PUBLIC spdlog::spdlog
-    PUBLIC fmt::fmt
-    PUBLIC contract::contract
+    INTERFACE include
 )
 
 if(BUILD_TESTS)
