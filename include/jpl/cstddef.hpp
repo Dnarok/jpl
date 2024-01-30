@@ -1,6 +1,6 @@
 #pragma once
 
-#include "type_traits.hpp"
+#include "utility.hpp"
 
 #define NULL nullptr
 
@@ -8,7 +8,7 @@ namespace jpl
 {
     using nullptr_t = decltype(nullptr);
     using size_t = decltype(sizeof(int));
-    using ptrdiff_t = decltype(std::declval<int*>() - std::declval<int*>());
+    using ptrdiff_t = decltype(declval<int*>() - declval<int*>());
     using max_align_t = long double;
 
     enum class byte : unsigned char

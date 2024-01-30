@@ -16,6 +16,7 @@ add_subdirectory(external)
 add_library(${MY_PROJECT_NAME} INTERFACE
     include/jpl/cstddef.hpp
     include/jpl/type_traits.hpp
+    include/jpl/utility.hpp
 )
 
 target_include_directories(${MY_PROJECT_NAME}
