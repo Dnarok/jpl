@@ -5,6 +5,8 @@
 // true_type
 // false_type
 // type_identity
+// enable_if
+// enable_if_t
 namespace jpl
 {
     template <typename T, T v>
@@ -35,6 +37,17 @@ namespace jpl
     {
         using type = T;
     };
+
+    template <bool B, typename T = void>
+    struct enable_if
+    {};
+    template <typename T>
+    struct enable_if<true, T>
+    {
+        using type = T;
+    };
+    template <bool B, typename T = void>
+    using enable_if_t = typename enable_if<B, T>::type;
 };
 
 // is_same
@@ -742,4 +755,22 @@ namespace jpl
     {};
     template <typename T>
     inline constexpr bool is_member_object_pointer_v = is_member_object_pointer<T>::value;
+};
+
+// conditional
+// conditional_t
+namespace jpl
+{
+    template <bool B, typename T, typename F>
+    struct conditional
+    {
+        using type = T;
+    };
+    template <typename T, typename F>
+    struct conditional<false, T, F>
+    {
+        using type = F;
+    };
+    template <bool B, typename T, typename F>
+    using conditional_t = typename conditional<B, T, F>::type;
 };

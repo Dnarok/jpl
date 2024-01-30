@@ -10,10 +10,15 @@ namespace jpl
         return static_cast<remove_reference_t<T>&&>(t);
     };
 
+    namespace impl
+    {
+        template <typename T>
+        inline constexpr bool dependent_false = false;
+    };
     template <typename T>
     constexpr auto declval() noexcept -> add_rvalue_reference_t<T>
     {
-        static_assert(false, "declval can only be used in unevaluated contexts - i.e., it cannot be executed, compile time or not.");
+        static_assert(impl::dependent_false<T>, "declval can only be used in unevaluated contexts - i.e., it cannot be executed, compile time or not.");
     };
 
     template <typename T>

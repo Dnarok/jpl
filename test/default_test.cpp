@@ -9,15 +9,11 @@
 #define EXPECT_JPL_STD_EQ(F, ...) EXPECT_EQ((jpl::##F<__VA_ARGS__>), (std::##F<__VA_ARGS__>))
 #define EXPECT_JPL_STD_SAME(F, ...) EXPECT_SAME(jpl::##F<__VA_ARGS__>, std::##F<__VA_ARGS__>)
 
-template <typename T>
-struct functor
-{
-    constexpr auto operator()() -> void
-    {
-        EXPECT_SAME(T, int);
-        EXPECT_SAME(T, double);
-    };
-};
+template <typename T, typename U>
+struct smaller_of : jpl::conditional<sizeof(T) <= sizeof(U), T, U>
+{};
+template <typename T, typename U>
+using smaller_of_t = typename smaller_of<T, U>::type;
 
 TEST(type_traits, is_same)
 {
@@ -29,7 +25,9 @@ TEST(type_traits, is_same)
     EXPECT_JPL_STD_EQ(is_same_v, int, unsigned int);
     EXPECT_JPL_STD_EQ(is_same_v, int, signed int);
 
-    using list = jpl::type_list<int, double>;
+    using list_a = jpl::type_list<char, int, double>;
+    using list_b = jpl::type_list<int, double, char>;
+    using list_c = list_a::zip<smaller_of_t, list_b>;
 };
 
 TEST(type_traits, is_const)
