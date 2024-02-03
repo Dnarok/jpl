@@ -42,7 +42,7 @@ namespace jpl
             template <size_t I, typename U, typename V, typename... Vs>
             struct type_list_insert_inner
             {
-                static_assert(I <= (sizeof...(Ts) + sizeof...(Vs) + 1), "index past the end of the type list.");
+                static_assert(I <= (sizeof...(Ts) + sizeof...(Vs) + 1), "insert index > type_list::size.");
                 using type = typename type_list_insert_outer<Ts..., V>::template type_list_insert_inner<I - 1, U, Vs...>::type;
             };
             template <typename U, typename V, typename... Vs>
@@ -61,6 +61,29 @@ namespace jpl
         struct type_list_insert
         {
             using insert = typename type_list_insert_outer<>::template type_list_insert_inner<I, U, Ts...>::type;
+        };
+
+        template <typename... Ts>
+        struct type_list_erase_outer
+        {
+            template <size_t I, typename U, typename... Us>
+            struct type_list_erase_inner
+            {
+                static_assert(I < (sizeof...(Ts) + sizeof...(Us) + 1), "erase index >= type_list::size.");
+                using type = typename type_list_erase_outer<Ts..., U>::template type_list_erase_inner<I - 1, Us...>::type;
+            };
+            template <typename U, typename... Us>
+            struct type_list_erase_inner<0, U, Us...>
+            {
+                using type = type_list<Ts..., Us...>;
+            };
+        };
+
+
+        template <size_t I, typename... Ts>
+        struct type_list_erase
+        {
+            using erase = typename type_list_erase_outer<>::template type_list_erase_inner<I, Ts...>::type;
         };
 
         template <typename>
@@ -100,6 +123,9 @@ namespace jpl
         template <size_t I, typename U>
         using insert = impl::type_list_insert<I, U, Ts...>::insert;
 
+        template <size_t I>
+        using erase = impl::type_list_erase<I, Ts...>::erase;
+
         template <template <typename> typename F, typename... Args>
         static constexpr auto apply_to_function(Args&&... args) -> void
         {
@@ -111,6 +137,9 @@ namespace jpl
 
         template <template <typename, typename> typename F, typename UL>
         using zip = impl::type_list_zip<type_list>::template zip<F, UL>;
+
+        template <template <typename, typename> typename F>
+        using fold = type_list;
 
         template <size_t I>
         using get = impl::type_list_get<I, Ts...>::get;

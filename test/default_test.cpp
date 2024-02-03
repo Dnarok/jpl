@@ -28,6 +28,7 @@ TEST(type_traits, is_same)
     using list_a = jpl::type_list<char, int, double>;
     using list_b = jpl::type_list<int, double, char>;
     using list_c = list_a::zip<smaller_of_t, list_b>;
+    list_c::erase<2>;
 };
 
 TEST(type_traits, is_const)
