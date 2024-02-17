@@ -2,7 +2,7 @@
 
 #include "utility.hpp"
 
-#define NULL nullptr
+// #define NULL nullptr
 
 namespace jpl
 {

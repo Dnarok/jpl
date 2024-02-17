@@ -69,7 +69,7 @@ namespace jpl
 
     template <typename T, typename... U>
     struct is_any_of : bool_constant<
-        (is_same_v<T, U> || ...)
+        (is_same_v<T, U> or ...)
     >
     {};
     template <typename T, typename... U>
@@ -77,7 +77,7 @@ namespace jpl
 
     template <typename T, typename... U>
     struct is_none_of : bool_constant<
-        (!is_same_v<T, U> && ...)
+        (!is_same_v<T, U> and ...)
     >
     {};
     template <typename T, typename... U>
@@ -320,7 +320,7 @@ namespace jpl
 namespace jpl
 {
     template <typename T>
-    inline constexpr bool is_reference_v = is_lvalue_reference_v<T> || is_rvalue_reference_v<T>;
+    inline constexpr bool is_reference_v = is_lvalue_reference_v<T> or is_rvalue_reference_v<T>;
     template <typename T>
     struct is_reference : bool_constant<is_reference_v<T>>
     {};
@@ -757,6 +757,49 @@ namespace jpl
     inline constexpr bool is_member_object_pointer_v = is_member_object_pointer<T>::value;
 };
 
+// is_arithmetic
+// is_arithmetic_v
+// is_fundamental
+// is_fundamental_v
+// is_scalar
+// is_scalar_v
+// is_object
+// is_object_v
+namespace jpl
+{
+    template <typename T>
+    inline constexpr bool is_arithmetic_v = is_integral_v<T> or is_floating_point_v<T>;
+    template <typename T>
+    struct is_arithmetic : bool_constant<is_arithmetic_v<T>>
+    {};
+
+    template <typename T>
+    inline constexpr bool is_fundamental_v = is_arithmetic_v<T> or is_void_v<T> or is_null_pointer_v<T>;
+    template <typename T>
+    struct is_fundamental : bool_constant<is_fundamental_v<T>>
+    {};
+
+    template <typename T>
+    inline constexpr bool is_scalar_v = is_arithmetic_v<T> or is_enum_v<T> or is_pointer_v<T> or is_member_pointer_v<T> or is_null_pointer_v<T>;
+    template <typename T>
+    struct is_scalar : bool_constant<is_scalar_v<T>>
+    {};
+
+    template <typename T>
+    inline constexpr bool is_object_v = not is_function_v<T> and not is_reference_v<T> and not is_void_v<T>;
+    template <typename T>
+    struct is_object : bool_constant<is_object_v<T>>
+    {};
+
+    template <typename T>
+    inline constexpr bool is_compound_v = not is_fundamental_v<T>;
+    template <typename T>
+    struct is_compound : bool_constant<is_compound_v<T>>
+    {};
+
+
+};
+
 // conditional
 // conditional_t
 namespace jpl
@@ -773,4 +816,332 @@ namespace jpl
     };
     template <bool B, typename T, typename F>
     using conditional_t = typename conditional<B, T, F>::type;
+};
+
+// is_constructible
+// is_constructible_v
+// is_trivially_constructible
+// is_trivially_constructible_v
+// is_nothrow_constructible
+// is_nothrow_constructible_v
+namespace jpl
+{
+    template <typename T, typename... As>
+    inline constexpr bool is_constructible_v = (is_object_v<T> or is_reference_v<T>) and requires { T{ declval<As>()... }; };
+    template <typename T, typename... As>
+    struct is_constructible : bool_constant<is_constructible_v<T, As...>>
+    {};
+
+    template <typename T, typename... As>
+    inline constexpr bool is_trivially_constructible_v = __is_trivially_constructible(T, As...);
+    template <typename T, typename... As>
+    struct is_trivially_constructible : bool_constant<is_trivially_constructible_v<T, As...>>
+    {};
+
+    template <typename T, typename... As>
+    inline constexpr bool is_nothrow_constructible_v = (is_object_v<T> or is_reference_v<T>) and requires { { T{ declval<As>()... } } noexcept; };
+    template <typename T, typename... As>
+    struct is_nothrow_constructible : bool_constant<is_nothrow_constructible_v<T, As...>>
+    {};
+};
+
+// is_default_constructible
+// is_default_constructible_v
+// is_trivially_default_constructible
+// is_trivially_default_constructible_v
+// is_nothrow_default_constructible
+// is_nothrow_default_constructible_v
+namespace jpl
+{
+    template <typename T>
+    struct is_default_constructible : is_constructible<T>
+    {};
+    template <typename T>
+    inline constexpr bool is_default_constructible_v = is_default_constructible<T>::value;
+
+    template <typename T>
+    struct is_trivially_default_constructible : is_trivially_constructible<T>
+    {};
+    template <typename T>
+    inline constexpr bool is_trivially_default_constructible_v = is_trivially_default_constructible<T>::value;
+
+    template <typename T>
+    struct is_nothrow_default_constructible : is_nothrow_constructible<T>
+    {};
+    template <typename T>
+    inline constexpr bool is_nothrow_default_constructible_v = is_nothrow_default_constructible<T>::value;
+};
+
+// is_copy_constructible
+// is_copy_constructible_v
+// is_trivially_copy_constructible
+// is_trivially_copy_constructible_v
+// is_nothrow_copy_constructible
+// is_nothrow_copy_constructible_v
+namespace jpl
+{
+    template <typename T>
+    struct is_copy_constructible : is_constructible<T, add_lvalue_reference_t<add_const_t<T>>>
+    {};
+    template <typename T>
+    inline constexpr bool is_copy_constructible_v = is_copy_constructible<T>::value;
+
+    template <typename T>
+    struct is_trivially_copy_constructible : is_trivially_constructible<T, add_lvalue_reference_t<add_const_t<T>>>
+    {};
+    template <typename T>
+    inline constexpr bool is_trivially_copy_constructible_v = is_trivially_copy_constructible<T>::value;
+
+    template <typename T>
+    struct is_nothrow_copy_constructible : is_nothrow_constructible<T, add_lvalue_reference_t<add_const_t<T>>>
+    {};
+    template <typename T>
+    inline constexpr bool is_nothrow_copy_constructible_v = is_nothrow_copy_constructible<T>::value;
+};
+
+// is_move_constructible
+// is_move_constructible_v
+// is_trivially_move_constructible
+// is_trivially_move_constructible_v
+// is_nothrow_move_constructible
+// is_nothrow_move_constructible_v
+namespace jpl
+{
+    template <typename T>
+    struct is_move_constructible : is_constructible<T, add_rvalue_reference_t<T>>
+    {};
+    template <typename T>
+    inline constexpr bool is_move_constructible_v = is_move_constructible<T>::value;
+
+    template <typename T>
+    struct is_trivially_move_constructible : is_trivially_constructible<T, add_rvalue_reference_t<T>>
+    {};
+    template <typename T>
+    inline constexpr bool is_trivially_move_constructible_v = is_trivially_move_constructible<T>::value;
+
+    template <typename T>
+    struct is_nothrow_move_constructible : is_nothrow_constructible<T, add_rvalue_reference_t<T>>
+    {};
+    template <typename T>
+    inline constexpr bool is_nothrow_move_constructible_v = is_nothrow_move_constructible<T>::value;
+};
+
+// is_assignable
+// is_assignable_v
+// is_trivially_assignable
+// is_trivially_assignable_v
+// is_nothrow_assignable
+// is_nothrow_assignable_v
+namespace jpl
+{
+    template <typename T, typename U>
+    inline constexpr bool is_assignable_v = requires { declval<T>() = declval<U>(); };
+    template <typename T, typename U>
+    struct is_assignable : bool_constant<is_assignable_v<T, U>>
+    {};
+
+    template <typename T, typename U>
+    inline constexpr bool is_trivially_assignable_v = __is_trivially_assignable(T, U);
+    template <typename T, typename U>
+    struct is_trivially_assignable : bool_constant<is_trivially_assignable_v<T, U>>
+    {};
+
+    template <typename T, typename U>
+    inline constexpr bool is_nothrow_assignable_v = requires { { declval<T>() = declval<U>() } noexcept; };
+    template <typename T, typename U>
+    struct is_nothrow_assignable : bool_constant<is_nothrow_assignable_v<T, U>>
+    {};
+};
+
+// is_copy_assignable
+// is_copy_assignable_v
+// is_trivially_copy_assignable
+// is_trivially_copy_assignable_v
+// is_nothrow_copy_assignable
+// is_nothrow_copy_assignable_v
+namespace jpl
+{
+    template <typename T>
+    struct is_copy_assignable : is_assignable<add_lvalue_reference_t<T>, add_lvalue_reference_t<add_const_t<T>>>
+    {};
+    template <typename T>
+    inline constexpr bool is_copy_assignable_v = is_copy_assignable<T>::value;
+
+    template <typename T>
+    struct is_trivially_copy_assignable : is_trivially_assignable<add_lvalue_reference_t<T>, add_lvalue_reference_t<add_const_t<T>>>
+    {};
+    template <typename T>
+    inline constexpr bool is_trivially_copy_assignable_v = is_trivially_copy_assignable<T>::value;
+
+    template <typename T>
+    struct is_nothrow_copy_assignable : is_nothrow_assignable<add_lvalue_reference_t<T>, add_lvalue_reference_t<add_const_t<T>>>
+    {};
+    template <typename T>
+    inline constexpr bool is_nothrow_copy_assignable_v = is_nothrow_copy_assignable<T>::value;
+};
+
+// is_move_assignable
+// is_move_assignable_v
+// is_trivially_move_assignable
+// is_trivially_move_assignable_v
+// is_nothrow_move_assignable
+// is_nothrow_move_assignable_v
+namespace jpl
+{
+    template <typename T>
+    struct is_move_assignable : is_assignable<add_lvalue_reference_t<T>, add_rvalue_reference_t<T>>
+    {};
+    template <typename T>
+    inline constexpr bool is_move_assignable_v = is_move_assignable<T>::value;
+
+    template <typename T>
+    struct is_trivially_move_assignable : is_trivially_assignable<add_lvalue_reference_t<T>, add_rvalue_reference_t<T>>
+    {};
+    template <typename T>
+    inline constexpr bool is_trivially_move_assignable_v = is_trivially_move_assignable<T>::value;
+
+    template <typename T>
+    struct is_nothrow_move_assignable : is_nothrow_assignable<add_lvalue_reference_t<T>, add_rvalue_reference_t<T>>
+    {};
+    template <typename T>
+    inline constexpr bool is_nothrow_move_assignable_v = is_nothrow_move_assignable<T>::value;
+};
+
+// is_destructible
+// is_destructible_v
+// is_trivially_destructible
+// is_trivially_destructible_v
+// is_nothrow_destructible
+// is_nothrow_destructible_v
+namespace jpl
+{
+    namespace impl
+    {
+        template <typename T>
+        struct is_destructible
+        {
+            using U = remove_all_extents_t<T>;
+            static constexpr bool value = requires { declval<add_lvalue_reference_t<U>>().~U(); };
+        };
+    };
+    template <typename T>
+    inline constexpr bool is_destructible_v = is_reference_v<T> or (is_object_v<T> and impl::is_destructible<T>::value);
+    template <typename T>
+    struct is_destructible : bool_constant<is_destructible_v<T>>
+    {};
+
+    template <typename T>
+    inline constexpr bool is_trivially_destructible_v = __is_trivially_destructible(T);
+    template <typename T>
+    struct is_trivially_destructible : bool_constant<is_trivially_destructible_v<T>>
+    {};
+
+    namespace impl
+    {
+        template <typename T>
+        struct is_nothrow_destructible
+        {
+            using U = remove_all_extents_t<T>;
+            static constexpr bool value = requires { { declval<add_lvalue_reference_t<U>>().~U() } noexcept; };
+        };
+    };
+    template <typename T>
+    inline constexpr bool is_nothrow_destructible_v = is_reference_v<T> or (is_object_v<T> and impl::is_nothrow_destructible<T>::value);
+    template <typename T>
+    struct is_nothrow_destructible : bool_constant<is_nothrow_destructible_v<T>>
+    {};
+};
+
+// is_swappable_with
+// is_swappable_with_v
+// is_swappable
+// is_swappable_v
+// is_nothrow_swappable_with
+// is_nothrow_swappable_with_v
+// is_nothrow_swappable
+// is_nothrow_swappable_v
+namespace jpl
+{
+    namespace impl
+    {
+        template <typename T, typename U>
+        struct is_swappable_with
+        {
+            using std::swap;
+            static constexpr bool value = requires
+            {
+                swap(declval<T>(), declval<U>());
+                swap(declval<U>(), declval<T>());
+            };
+        };
+    };
+    template <typename T, typename U>
+    inline constexpr bool is_swappable_with_v = impl::is_swappable_with<T, U>::value;
+    template <typename T, typename U>
+    struct is_swappable_with : bool_constant<is_swappable_with_v<T, U>>
+    {};
+
+    template <typename T>
+    inline constexpr bool is_swappable_v = is_swappable_with_v<add_lvalue_reference_t<T>, add_lvalue_reference_t<T>>;
+    template <typename T>
+    struct is_swappable : bool_constant<is_swappable_v<T>>
+    {};
+
+    namespace impl
+    {
+        template <typename T, typename U>
+        struct is_nothrow_swappable_with
+        {
+            using std::swap;
+            static constexpr bool value = requires
+            {
+                { swap(declval<T>(), declval<U>()) } noexcept;
+                { swap(declval<U>(), declval<T>()) } noexcept;
+            };
+        };
+    };
+    template <typename T, typename U>
+    inline constexpr bool is_nothrow_swappable_with_v = impl::is_nothrow_swappable_with<T, U>::value;
+    template <typename T, typename U>
+    struct is_nothrow_swappable_with : bool_constant<is_nothrow_swappable_with_v<T, U>>
+    {};
+
+    template <typename T>
+    inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable_with_v<add_lvalue_reference_t<T>, add_lvalue_reference_t<T>>;
+    template <typename T>
+    struct is_nothrow_swappable : bool_constant<is_nothrow_swappable_v<T>>
+    {};
+};
+
+// is_convertible
+// is_convertible_v
+// is_nothrow_convertible
+// is_nothrow_convertible_v
+namespace jpl
+{
+    template <typename T, typename U>
+    inline constexpr bool is_convertible_v = (is_void_v<T> and is_void_v<U>) or requires
+    {
+        // U can be the return type for a function
+        static_cast<U(*)()>(nullptr);
+        // can implicitly convert T to U when passing T as a parameter to a
+        // function that takes U.
+        declval<void(&)(U)>()(declval<T>());
+    };
+    template <typename T, typename U>
+    struct is_convertible : bool_constant<is_convertible_v<T, U>>
+    {};
+
+    template <typename T, typename U>
+    inline constexpr bool is_nothrow_convertible_v = (is_void_v<T> and is_void_v<U>) or requires
+    {
+        // U can be the return type for a function
+        static_cast<U(*)() noexcept>(nullptr);
+        // can implicitly convert T to U when passing T as a parameter to a
+        // function that takes U.
+        { declval<void(&)(U) noexcept>()(declval<T>()) } noexcept;
+    };
+    template <typename T, typename U>
+    struct is_nothrow_convertible : bool_constant<is_nothrow_convertible_v<T, U>>
+    {};
 };

@@ -107,6 +107,28 @@ namespace jpl
             template <template <typename, typename> typename F, typename U>
             using zip = typename type_list_zip_outer<T>::template type_list_zip_inner<F, U>::type;
         };
+
+        template <template <typename, typename> typename F, typename T, typename... Ts>
+        struct type_list_fold_right
+        {
+            using fold_right = F<T, typename type_list_fold_right<F, Ts...>::fold_right>;
+        };
+        template <template <typename, typename> typename F, typename T1, typename T2>
+        struct type_list_fold_right<F, T1, T2>
+        {
+            using fold_right = F<T1, T2>;
+        };
+
+        template <template <typename, typename> typename F, typename T1, typename T2, typename... Ts>
+        struct type_list_fold_left
+        {
+            using fold_left = typename type_list_fold_left<F, F<T1, T2>, Ts...>::fold_left;
+        };
+        template <template <typename, typename> typename F, typename T1, typename T2>
+        struct type_list_fold_left<F, T1, T2>
+        {
+            using fold_left = F<T1, T2>;
+        };
     };
 
     template <typename... Ts>
@@ -138,8 +160,11 @@ namespace jpl
         template <template <typename, typename> typename F, typename UL>
         using zip = impl::type_list_zip<type_list>::template zip<F, UL>;
 
-        template <template <typename, typename> typename F>
-        using fold = type_list;
+        template <template <typename, typename> typename F, typename... Is>
+        using fold_right = impl::type_list_fold_right<F, Ts..., Is...>::fold_right;
+
+        template <template <typename, typename> typename F, typename... Is>
+        using fold_left = impl::type_list_fold_left<F, Is..., Ts...>::fold_left;
 
         template <size_t I>
         using get = impl::type_list_get<I, Ts...>::get;

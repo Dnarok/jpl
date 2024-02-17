@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include "jpl/type_traits.hpp"
 #include "jpl/type_list.hpp"
+#include "jpl/memory.hpp"
+#include "jpl/cstddef.hpp"
 #include <type_traits>
 
 #define EXPECT_SAME(T, U) EXPECT_TRUE((jpl::is_same_v<T, U>))
@@ -9,11 +11,50 @@
 #define EXPECT_JPL_STD_EQ(F, ...) EXPECT_EQ((jpl::##F<__VA_ARGS__>), (std::##F<__VA_ARGS__>))
 #define EXPECT_JPL_STD_SAME(F, ...) EXPECT_SAME(jpl::##F<__VA_ARGS__>, std::##F<__VA_ARGS__>)
 
-template <typename T, typename U>
-struct smaller_of : jpl::conditional<sizeof(T) <= sizeof(U), T, U>
-{};
-template <typename T, typename U>
-using smaller_of_t = typename smaller_of<T, U>::type;
+struct Data
+{
+    Data() noexcept
+    {
+        std::cout << "  Data default constructed.\n";
+    };
+    Data(const Data&) noexcept
+    {
+        std::cout << "  Data copy constructed.\n";
+    };
+    Data(Data&&) noexcept
+    {
+        std::cout << "  Data move constructed.\n";
+    };
+    ~Data() noexcept
+    {
+        std::cout << "  Data destructed.\n";
+    };
+};
+
+struct Deleter
+{
+    Deleter() noexcept
+    {
+        // std::cout << "  Deleter default constructed.\n";
+    };
+    Deleter(const Deleter&) noexcept
+    {
+        std::cout << "  Deleter const copy constructed.\n";
+    };
+    Deleter(Deleter&) noexcept
+    {
+        std::cout << "  Deleter non-const copy constructed.\n";
+    };
+    Deleter(Deleter&&) noexcept
+    {
+        std::cout << "  Deleter move constructed.\n";
+    };
+    auto operator()(Data* pointer) const -> void
+    {
+        std::cout << "  Deleting Data.\n";
+        delete pointer;
+    };
+};
 
 TEST(type_traits, is_same)
 {
@@ -25,10 +66,87 @@ TEST(type_traits, is_same)
     EXPECT_JPL_STD_EQ(is_same_v, int, unsigned int);
     EXPECT_JPL_STD_EQ(is_same_v, int, signed int);
 
-    using list_a = jpl::type_list<char, int, double>;
-    using list_b = jpl::type_list<int, double, char>;
-    using list_c = list_a::zip<smaller_of_t, list_b>;
-    list_c::erase<2>;
+    std::cout << "(1a) empty default constructor:\n";
+    {
+        static_assert(jpl::is_default_constructible_v<jpl::unique_ptr<Data>>);
+        jpl::unique_ptr<Data> up; // no print
+    }
+    std::cout << "(1b) nullptr_t constructor:\n";
+    {
+        static_assert(jpl::is_constructible_v<jpl::unique_ptr<Data>, jpl::nullptr_t>);
+        jpl::unique_ptr<Data> up{ nullptr }; // no print
+    }
+
+    std::cout << "(2) explicit pointer constructor:\n";
+    {
+        static_assert(jpl::is_constructible_v<jpl::unique_ptr<Data>, Data*>);
+        jpl::unique_ptr<Data> up{ new Data };
+    }
+
+    {
+        Deleter deleter;
+        std::cout << "(3a) nonref deleter copy:\n";
+        {
+            static_assert(jpl::is_constructible_v<jpl::unique_ptr<Data, const Deleter&>, Data*, Deleter&>);
+            jpl::unique_ptr<Data, Deleter> up{ new Data, deleter };
+        }
+        std::cout << "(3b) lvalue deleter receiving lvalue:\n";
+        {
+            static_assert(jpl::is_constructible_v<jpl::unique_ptr<Data, const Deleter&>, Data*, Deleter&>);
+            jpl::unique_ptr<Data, Deleter&> up{ new Data, deleter };
+        }
+        std::cout << "(3c) const lvalue deleter receiving const lvalue:\n";
+        {
+            static_assert(jpl::is_constructible_v<jpl::unique_ptr<Data, const Deleter&>, Data*, Deleter&>);
+            jpl::unique_ptr<Data, const Deleter&> up{ new Data, deleter };
+        }
+    }
+
+    std::cout << "(4a) nonref deleter move:\n";
+    {
+        static_assert(jpl::is_constructible_v<jpl::unique_ptr<Data, Deleter>, Data*, Deleter&&>);
+        jpl::unique_ptr<Data, Deleter> up{ new Data, Deleter{} };
+    }
+    std::cout << "(4b) lvalue deleter receiving rvalue:\n";
+    {
+        // shouldn't compile.
+        static_assert(not jpl::is_constructible_v<jpl::unique_ptr<Data, Deleter&>, Data*, Deleter&&>);
+        // jpl::unique_ptr<Data, Deleter&> up{ new Data, Deleter{} };
+    }
+    std::cout << "(4c) const lvalue deleter receiving const rvalue:\n";
+    {
+        // shouldn't compile.
+        static_assert(not jpl::is_constructible_v<jpl::unique_ptr<Data, Deleter&>, Data*, const Deleter&&>);
+        // jpl::unique_ptr<Data, const Deleter&> up{ new Data, Deleter{} };
+    }
+
+    std::cout << "(5) move constructor:\n";
+    {
+        static_assert(jpl::is_constructible_v<jpl::unique_ptr<Data>, jpl::unique_ptr<Data>&&>);
+        jpl::unique_ptr<Data> up1{ new Data };
+        jpl::unique_ptr<Data> up2{ jpl::move(up1) };
+        
+        std::unique_ptr<Data> up3;
+    }
+
+    std::cout << "(6) compatible deleter move constructor: \n";
+    {
+        Deleter deleter;
+        {
+            jpl::unique_ptr<Data, Deleter> u1{ new Data, deleter };
+            jpl::unique_ptr<Data, Deleter> u2{ jpl::move(u1) };
+
+            jpl::unique_ptr<Data, Deleter&> u3{ new Data, deleter };
+            jpl::unique_ptr<Data, Deleter> u4{ jpl::move(u3) };
+        }
+    }
+
+    std::cout << "(7) copy constructor:\n";
+    {
+        // shouldn't compile
+        jpl::unique_ptr<Data> u1{ new Data };
+        jpl::unique_ptr<Data> u2{ u1 };
+    }
 };
 
 TEST(type_traits, is_const)
